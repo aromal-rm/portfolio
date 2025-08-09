@@ -156,6 +156,10 @@
   margin-right: auto;
 }
 
+.hero__cta a:not(:first-child) {
+  margin-left: 1rem;
+}
+
 /* ===== BUTTONS ===== */
 .btn {
   display: inline-block;
