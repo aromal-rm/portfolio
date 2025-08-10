@@ -1,3 +1,11 @@
+/**
+ * Audio Visualizer
+ * * This visualizer is heavily inspired by the work at https://codepen.io/filipz/pen/dPygJGM
+ * * Main JavaScript functionality for Aromal RM Portfolio
+ * Handles navigation, theme switching, and general interactions
+ */
+
+
 import * as THREE from "https://esm.sh/three@0.175.0";
 import { GUI } from "https://esm.sh/dat.gui@0.7.9";
 
@@ -80,7 +88,7 @@ const settings = {
   transitionSmoothness: 0.03, // How smooth the transition is
 
   // Color settings
-  colorPreset: "Warm",
+  colorPreset: "MyTheme",
   bgColorDown: [40, 20, 10],
   bgColorUp: [20, 10, 5],
   color1In: [255, 200, 0],
@@ -110,6 +118,16 @@ const settings = {
 
 // Color presets
 const colorPresets = {
+  MyTheme: {
+    bgColorDown: [10, 10, 10],
+    bgColorUp: [20, 20, 20],
+    color1In: [255, 77, 77],
+    color1Out: [230, 57, 57],
+    color2In: [255, 128, 128],
+    color2Out: [255, 102, 102],
+    color3In: [255, 153, 153],
+    color3Out: [255, 128, 128],
+  },
   Default: {
     bgColorDown: [51, 25, 25],
     bgColorUp: [25, 25, 51],
@@ -263,24 +281,6 @@ function updateShaderColors() {
     settings.color3Out[2] / 255
   );
 }
-
-// Custom cursor implementation with throttling for better performance
-// const cursor = document.querySelector(".custom-cursor");
-// let lastCursorUpdate = 0;
-
-// document.addEventListener("mousemove", (e) => {
-//   // Update mouse position for shader
-//   mouse.x = e.clientX / window.innerWidth;
-//   mouse.y = e.clientY / window.innerHeight;
-
-//   // Throttle cursor updates to every 16ms (approx 60fps)
-//   const now = performance.now();
-//   if (now - lastCursorUpdate > 16) {
-//     cursor.style.left = `${e.clientX}px`;
-//     cursor.style.top = `${e.clientY}px`;
-//     lastCursorUpdate = now;
-//   }
-// });
 
 // Vertex shader source
 const vertexShaderSource = `
@@ -686,10 +686,6 @@ function init() {
   camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
   camera.position.z = 1;
 
-  // Create renderer
-  //   renderer = new THREE.WebGLRenderer({ antialias: true });
-  //   renderer.setSize(window.innerWidth, window.innerHeight);
-  //   container.appendChild(renderer.domElement);
   renderer = new THREE.WebGLRenderer({
     canvas: canvas,
     antialias: true,
@@ -826,6 +822,7 @@ function init() {
 // Set up dat.gui
 function setupGUI() {
   gui = new GUI({ width: 300 });
+  gui.domElement.style.display = "none";
 
   // Create folders for organization
   const animationFolder = gui.addFolder("Animation");
@@ -1074,7 +1071,7 @@ function setupAudio() {
   audioElement.preload = "auto";
 
   // Use the new audio URL
-  audioElement.src = "https://assets.codepen.io/7558/kosikk-slow-motion.ogg";
+  audioElement.src = "/assets/bgm.mp3";
   audioElement.loop = true;
 }
 
@@ -1100,7 +1097,10 @@ function toggleAudio() {
       });
     });
 
-    canvas.classList.add('visible'); // Make the canvas visible
+    canvas.classList.add('visible');
+    if (gui && gui.domElement) {
+      gui.domElement.style.display = 'block';
+    }
     playing = true;
     shaderMaterial.uniforms.isPlaying.value = true;
 
@@ -1109,7 +1109,18 @@ function toggleAudio() {
     beatInterval = 0;
   } else {
     audioElement.pause();
-    canvas.classList.remove('visible'); // Hide the canvas
+    canvas.classList.remove('visible');
+    if (gui && gui.domElement) {
+      gui.domElement.style.display = 'none';
+      settings.showGui = false;
+      // Update the GUI controller to reflect the change
+      for (let i = 0; i < gui.__controllers.length; i++) {
+        const controller = gui.__controllers[i];
+        if (controller.property === "showGui") {
+          controller.updateDisplay();
+        }
+      }
+    }
     playing = false;
     shaderMaterial.uniforms.isPlaying.value = false;
   }

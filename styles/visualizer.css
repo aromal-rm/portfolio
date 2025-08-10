@@ -31,3 +31,9 @@
 .dg.ac {
     z-index: 9999 !important;
 }
+
+.hero__title,
+.hero__subtitle,
+.accent {
+  text-shadow: 0 0 8px rgba(0, 0, 0, 0.7);
+}
