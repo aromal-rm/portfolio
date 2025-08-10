@@ -26,11 +26,16 @@ class AnimationController {
     // Create intersection observer
     this.observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
+        const el = entry.target;
+        const repeat = el.getAttribute('data-animate-repeat') !== 'false';
         if (entry.isIntersecting) {
-          entry.target.classList.add('animate');
-          
-          // Optional: Stop observing after animation triggers
-          this.observer.unobserve(entry.target);
+          el.classList.add('animate');
+          if (!repeat) {
+            // Stop observing one-time animations
+            this.observer.unobserve(el);
+          }
+        } else if (repeat) {
+          el.classList.remove('animate');
         }
       });
     }, observerOptions);
@@ -42,22 +47,37 @@ class AnimationController {
   observeElements() {
     const animateElements = document.querySelectorAll('.animate-on-scroll');
     animateElements.forEach(el => {
+      if (!el.__animateInit) {
+        const delay = el.getAttribute('data-animate-delay');
+        if (delay) {
+          el.style.transitionDelay = delay;
+        }
+        el.__animateInit = true;
+      }
       this.observer.observe(el);
     });
   }
 
   setupParallaxEffects() {
-    // Subtle parallax effect for hero section
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const heroImg = document.querySelector('.hero__img');
-    if (heroImg) {
+    if (!heroImg) return;
+    const update = ({ scrollY, viewportHeight }) => {
+      if (scrollY <= viewportHeight) {
+        const rate = scrollY * -0.5;
+        heroImg.style.transform = `translateY(${rate}px)`;
+      }
+    };
+    if (window.ScrollManager) {
+      window.ScrollManager.onScroll(update);
+    } else {
+      // Fallback (kept minimal)
       window.addEventListener('scroll', this.utils.throttle(() => {
-        const scrolled = window.pageYOffset;
-        const rate = scrolled * -0.5;
-        
-        if (scrolled <= window.innerHeight) {
-          heroImg.style.transform = `translateY(${rate}px) scale(1)`;
-        }
-      }, 16));
+        update({
+          scrollY: window.pageYOffset,
+          viewportHeight: window.innerHeight
+        });
+      }, 32), { passive: true });
     }
   }
 

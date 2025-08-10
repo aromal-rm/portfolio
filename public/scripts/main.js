@@ -16,6 +16,11 @@ class PortfolioApp {
     this.setupHeaderScroll();
     this.setupMobileNavigation();
     // this.setupCustomCursor();
+    this.computeSectionBounds = this.computeSectionBounds.bind(this);
+    this.registerScrollHandler();
+    window.addEventListener('resize', utils.debounce(() => {
+      this.computeSectionBounds(true);
+    }, 150), { passive: true });
   }
 
   // handleResize() {
@@ -83,9 +88,6 @@ class PortfolioApp {
       link.addEventListener('click', () => this.closeMobileNav());
     });
 
-    // Scroll event
-    window.addEventListener('scroll', () => this.handleScroll());
-    
     // Resize event
     window.addEventListener('resize', () => this.handleResize());
   }
@@ -111,15 +113,20 @@ class PortfolioApp {
     const themeToggle = document.getElementById('theme-toggle');
     if (themeToggle) {
       const icon = themeToggle.querySelector('.theme-toggle__icon');
-      icon.textContent = theme === 'dark' ? '☀️' : '🌙';
+      if (icon) icon.textContent = theme === 'dark' ? '☀️' : '🌙';
+      themeToggle.setAttribute('aria-pressed', theme === 'dark');
     }
   }
 
   setupScrollIndicator() {
     const scrollIndicator = document.createElement('div');
     scrollIndicator.className = 'scroll-indicator';
+    scrollIndicator.setAttribute('role', 'progressbar');
+    scrollIndicator.setAttribute('aria-label', 'Scroll progress');
+    scrollIndicator.setAttribute('aria-valuemin', '0');
+    scrollIndicator.setAttribute('aria-valuemax', '100');
+    scrollIndicator.setAttribute('aria-valuenow', '0');
     document.body.appendChild(scrollIndicator);
-    
     this.scrollIndicator = scrollIndicator;
   }
 
@@ -171,27 +178,54 @@ class PortfolioApp {
     }
   }
 
-  handleScroll() {
-    const scrollTop = window.pageYOffset;
-    const documentHeight = document.documentElement.scrollHeight - window.innerHeight;
-    const scrollPercentage = scrollTop / documentHeight;
+  registerScrollHandler() {
+    if (!window.ScrollManager) return;
+    this.computeSectionBounds();
+    window.ScrollManager.onScroll((state) => {
+      this.handleScrollState(state);
+    });
+  }
 
-    // Update scroll indicator
+  computeSectionBounds(force) {
+    if (!force && this._sectionBounds && this._sectionBounds.length) return;
+    const headerHeight = (document.querySelector('.header')?.offsetHeight || 0);
+    this._sectionBounds = Array.from(document.querySelectorAll('.section')).map(sec => {
+      const top = sec.offsetTop;
+      const height = sec.offsetHeight;
+      return {
+        id: sec.id,
+        top: top - headerHeight - 160,       // preload threshold
+        bottom: top + height - headerHeight - 160
+      };
+    });
+  }
+
+  handleScrollState({ scrollY, docHeight }) {
+    const scrollPercentage = docHeight > 0 ? scrollY / docHeight : 0;
     if (this.scrollIndicator) {
       this.scrollIndicator.style.transform = `scaleX(${scrollPercentage})`;
+      this.scrollIndicator.setAttribute('aria-valuenow', Math.round(scrollPercentage * 100));
     }
-
-    // Update header appearance
     if (this.header) {
-      if (scrollTop > 50) {
-        this.header.classList.add('scrolled');
-      } else {
-        this.header.classList.remove('scrolled');
+      if (scrollY > 50) this.header.classList.add('scrolled');
+      else this.header.classList.remove('scrolled');
+    }
+    this.updateActiveNavLinkCached(scrollY);
+  }
+
+  updateActiveNavLinkCached(scrollY) {
+    if (!this._sectionBounds) return;
+    const navLinks = document.querySelectorAll('.nav__link');
+    let current = '';
+    for (const b of this._sectionBounds) {
+      if (scrollY >= b.top && scrollY < b.bottom) {
+        current = b.id;
+        break;
       }
     }
-
-    // Update active navigation link
-    this.updateActiveNavLink();
+    navLinks.forEach(link => {
+      link.classList.toggle('active', link.getAttribute('href') === `#${current}`);
+    });
   }
 
   updateActiveNavLink() {
@@ -254,10 +288,62 @@ const utils = {
   }
 };
 
+/* ScrollManager: single scroll + rAF dispatcher */
+(function initScrollManager() {
+  if (window.ScrollManager) return;
+  class ScrollManager {
+    constructor() {
+      this.callbacks = [];
+      this.ticking = false;
+      this.state = this._read();
+      window.addEventListener('scroll', () => this._onScroll(), { passive: true });
+      window.addEventListener('resize', utils.debounce(() => {
+        this.state = this._read();
+        this._emit();
+      }, 120), { passive: true });
+    }
+    _read() {
+      const scrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+      const viewportHeight = window.innerHeight;
+      const fullHeight = document.documentElement.scrollHeight;
+      return {
+        scrollY,
+        viewportHeight,
+        docHeight: fullHeight - viewportHeight,
+        progress: (fullHeight - viewportHeight) > 0 ? scrollY / (fullHeight - viewportHeight) : 0
+      };
+    }
+    _onScroll() {
+      if (!this.ticking) {
+        this.ticking = true;
+        requestAnimationFrame(() => {
+          this.state = this._read();
+          this._emit();
+          this.ticking = false;
+        });
+      }
+    }
+    _emit() {
+      for (const cb of this.callbacks) cb(this.state);
+    }
+    onScroll(cb) {
+      this.callbacks.push(cb);
+      cb(this.state);
+      return () => {
+        this.callbacks = this.callbacks.filter(c => c !== cb);
+      };
+    }
+  }
+  window.ScrollManager = new ScrollManager();
+})();
+
 // Initialize app when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-  new PortfolioApp();
-  // app.setupCustomCursor();
+  const app = new PortfolioApp();
+  if (window.ScrollManager) {
+    // If sections load late (images), recompute after load
+    window.addEventListener('load', () => app.computeSectionBounds(true));
+  }
 });
 
 // Export for potential use in other modules
