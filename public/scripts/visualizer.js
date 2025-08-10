@@ -1071,7 +1071,7 @@ function setupAudio() {
   audioElement.preload = "auto";
 
   // Use the new audio URL
-  audioElement.src = "/assets/bgm.mp3";
+  audioElement.src = "./assets/bgm.mp3";
   audioElement.loop = true;
 }
 
