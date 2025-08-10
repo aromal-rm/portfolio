@@ -15,8 +15,53 @@ class PortfolioApp {
     this.setupSmoothScrolling();
     this.setupHeaderScroll();
     this.setupMobileNavigation();
+    // this.setupCustomCursor();
   }
 
+  // handleResize() {
+  //   // Close mobile nav on resize to desktop
+  //   if (window.innerWidth > 768) {
+  //     this.closeMobileNav();
+  //   }
+  // }
+
+  // setupCustomCursor() {
+  //   const cursorDot = document.querySelector('.cursor-dot');
+  //   const cursorOutline = document.querySelector('.cursor-outline');
+
+  //   if (cursorDot && cursorOutline) {
+  //     window.addEventListener('mousemove', (e) => {
+  //       const posX = e.clientX;
+  //       const posY = e.clientY;
+
+  //       cursorDot.style.left = `${posX}px`;
+  //       cursorDot.style.top = `${posY}px`;
+
+  //       cursorOutline.animate({
+  //         left: `${posX}px`,
+  //         top: `${posY}px`
+  //       }, { duration: 500, fill: 'forwards' });
+  //     });
+
+  //     const interactiveElements = document.querySelectorAll('a, button, .project-card, .social-link');
+
+  //     interactiveElements.forEach(el => {
+  //       el.addEventListener('mouseenter', () => {
+  //         cursorOutline.style.width = '60px';
+  //         cursorOutline.style.height = '60px';
+  //         cursorOutline.style.borderWidth = '3px';
+  //         cursorOutline.style.backgroundColor = 'rgba(255, 77, 77, 0.2)';
+  //       });
+
+  //       el.addEventListener('mouseleave', () => {
+  //         cursorOutline.style.width = '40px';
+  //         cursorOutline.style.height = '40px';
+  //         cursorOutline.style.borderWidth = '2px';
+  //         cursorOutline.style.backgroundColor = 'rgba(255, 77, 77, 0.1)';
+  //       });
+  //     });
+  //   }
+  // }
   setupEventListeners() {
     // Theme toggle
     const themeToggle = document.getElementById('theme-toggle');
@@ -212,6 +257,7 @@ const utils = {
 // Initialize app when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
   new PortfolioApp();
+  // app.setupCustomCursor();
 });
 
 // Export for potential use in other modules
