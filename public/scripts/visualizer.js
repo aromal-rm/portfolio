@@ -1359,14 +1359,14 @@ function animate(timestamp) {
   renderer.render(scene, camera);
 
   // Calculate FPS
-  frameCount++;
-  const now = timestamp;
-  if (now - lastTime >= 1000) {
-    const fps = Math.round((frameCount * 1000) / (now - lastTime));
-    fpsElement.textContent = `FPS: ${fps}`;
-    frameCount = 0;
-    lastTime = now;
-  }
+//   frameCount++;
+//   const now = timestamp;
+//   if (now - lastTime >= 1000) {
+//     const fps = Math.round((frameCount * 1000) / (now - lastTime));
+//     fpsElement.textContent = `FPS: ${fps}`;
+//     frameCount = 0;
+//     lastTime = now;
+//   }
 }
 
 // Initialize when the page loads
